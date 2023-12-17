@@ -14,6 +14,7 @@ const cors = require("cors");
 const connectDB = require("./db/connect");
 
 const userRouter = require("./routes/userRoutes");
+const cardRouter = require("./routes/cardRoutes");
 
 const notFoundMiddleware = require("./middlewares/not-found");
 const errorHandlerMiddleware = require("./middlewares/error-handler");
@@ -30,12 +31,11 @@ app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
 app.use(bodyParser.json());
 
-
 app.use("/users", userRouter);
+app.use("/cards", cardRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
-
 
 const port = process.env.PORT || 5000;
 const start = async () => {

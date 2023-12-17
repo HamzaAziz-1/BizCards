@@ -58,31 +58,31 @@ const CardSchema = new Schema(
         return Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
       },
     },
-    likes: { type: [Number], default: [] },
+    likes: { type: [String], required: false, default: [],unique:true },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
 );
 
 const cardValidationSchema = Joi.object({
-  title: Joi.string().min(2).max(256).required().messages({
+  title: Joi.string().min(4).max(75).required().messages({
     "string.base": "Title must be a string",
     "string.empty": "Title cannot be empty",
-    "string.min": "Title must have at least 2 characters",
-    "string.max": "Title can have at most 256 characters",
+    "string.min": "Title must have at least 4 characters",
+    "string.max": "Title can have at most 75 characters",
     "any.required": "Title is required",
   }),
-  subtitle: Joi.string().min(2).max(256).required().messages({
+  subtitle: Joi.string().min(5).max(75).required().messages({
     "string.base": "Subtitle must be a string",
     "string.empty": "Subtitle cannot be empty",
-    "string.min": "Subtitle must have at least 2 characters",
-    "string.max": "Subtitle can have at most 256 characters",
+    "string.min": "Subtitle must have at least 5 characters",
+    "string.max": "Subtitle can have at most 75 characters",
     "any.required": "Subtitle is required",
   }),
-  description: Joi.string().min(2).max(1024).required().messages({
+  description: Joi.string().min(5).max(1024).required().messages({
     "string.base": "Description must be a string",
     "string.empty": "Description cannot be empty",
-    "string.min": "Description must have at least 2 characters",
+    "string.min": "Description must have at least 5 characters",
     "string.max": "Description can have at most 1024 characters",
     "any.required": "Description is required",
   }),
@@ -101,11 +101,16 @@ const cardValidationSchema = Joi.object({
     "string.max": "Email can have at most 30 characters",
     "any.required": "Email is required",
   }),
-  web: Joi.string().min(14).max(50).allow("").messages({
-    "string.base": "Web must be a string",
-    "string.min": "Web must have at least 14 characters",
-    "string.max": "Web can have at most 50 characters",
-  }),
+  web: Joi.string()
+    .uri({
+      scheme: ["http", "https"],
+    })
+    .required()
+    .messages({
+      "string.base": "WEb must be a string",
+      "string.uri": "Invalid WEb format",
+      "any.required": "Web is required",
+    }),
   image: Joi.object({
     url: Joi.string().required().messages({
       "string.base": "Image URL must be a string",
@@ -157,8 +162,8 @@ const cardValidationSchema = Joi.object({
   bizNumber: Joi.number().default(() => {
     return Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
   }),
-  likes: Joi.array().items(Joi.number()).default([]),
-  user_id: Joi.string().hex().length(24).required().messages({
+  likes: Joi.array().items(Joi.string()).allow(null, "").default(0),
+  user_id: Joi.string().hex().length(24).allow(null, "").messages({
     "string.base": "User ID must be a string",
     "string.hex": "Invalid hexadecimal User ID",
     "string.length": "User ID must be 24 characters long",
