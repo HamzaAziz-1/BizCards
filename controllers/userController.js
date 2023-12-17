@@ -109,9 +109,18 @@ const getAllUsers = async (req, res) => {
   res.status(StatusCodes.OK).json({ users });
 };
 
+const getSingleUser = async (req, res) => {
+  const user = await User.findOne({ _id: req.params.id }).select("-password");
+  if (!user) {
+    throw new CustomError.NotFoundError(`No user with id : ${req.params.id}`);
+  }
+  res.status(StatusCodes.OK).json({ user });
+};
+
 module.exports = {
   register,
   login,
   logout,
-  getAllUsers
+  getAllUsers,
+  getSingleUser
 };
