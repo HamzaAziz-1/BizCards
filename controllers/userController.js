@@ -1,13 +1,13 @@
 const { User, userValidationSchema } = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const chalk = require("chalk");
+const Joi = require("joi");
 const CustomError = require("../errors");
 const {
   attachCookiesToResponse,
   createTokenUser,
   createJWT,
 } = require("../utils/jwt");
-
 
 const register = async (req, res) => {
   try {
@@ -81,7 +81,7 @@ const login = async (req, res) => {
   }
 
   const tokenUser = createTokenUser(user);
-  const token = createJWT({ payload: { user:tokenUser } });
+  const token = createJWT({ payload: { user: tokenUser } });
   const oneDay = 1000 * 60 * 60 * 24;
 
   res.cookie("token", token, {
@@ -104,23 +104,104 @@ const logout = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   const users = await User.find({
-    role: { $in: ["tourist", "vendor"] },
+    role: { $in: "user" },
   }).select("-password");
   res.status(StatusCodes.OK).json({ users });
 };
 
 const getSingleUser = async (req, res) => {
-  const user = await User.findOne({ _id: req.params.id }).select("-password");
-  if (!user) {
-    throw new CustomError.NotFoundError(`No user with id : ${req.params.id}`);
+  const { id } = req.params;
+  if (req.user.role == "admin" || req.user.userId == id) {
+    const user = await User.findOne({ _id: req.params.id }).select("-password");
+    if (!user) {
+      throw new CustomError.NotFoundError(`No user with id : ${req.params.id}`);
+    }
+    res.status(StatusCodes.OK).json({ user });
+  } else {
+    res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Not Authorized!" });
   }
-  res.status(StatusCodes.OK).json({ user });
 };
 
+const updateUser = async (req, res) => {
+  const { id } = req.params;
+  if (req.user.userId == id) {
+    // Validate the request data
+    const validationResult = userValidationSchema.validate(req.body, {
+      abortEarly: false, // Collect all validation errors
+      allowUnknown: true, // Allow unknown fields
+    });
+
+    if (validationResult.error) {
+      const errorMessage = validationResult.error.details[0].message;
+      return res.status(StatusCodes.BAD_REQUEST).json({ msg: errorMessage });
+    }
+    const user = await User.findOneAndUpdate({ _id: id }, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    await user.save();
+    res.status(StatusCodes.OK).json({ user });
+  } else {
+    res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Not Authorized" });
+  }
+};
+
+const updateStatus = async (req, res) => {
+  try {
+    const { isBusiness } = req.body;
+    const { id } = req.params;
+    const { error } = Joi.object({
+      isBusiness: userValidationSchema.extract("isBusiness"),
+    }).validate({ isBusiness });
+
+    if (error) {
+      throw new CustomError.BadRequestError(error.message);
+    }
+    if (req.user.userId == id) {
+      const user = await User.findOneAndUpdate(
+        { _id: req.user.userId },
+        { isBusiness },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+      await user.save();
+      res.status(StatusCodes.OK).json({ user });
+    } else {
+      res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Not Authorized!" });
+    }
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: error.message });
+  }
+};
+
+const deleteCurrentUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findOne({ _id: id });
+
+    if (!user) {
+      throw new CustomError.NotFoundError(`No user with id : ${id}`);
+    }
+    if (req.user.role == "admin" || req.user.userId == id) {
+      await user.deleteOne();
+      res.status(StatusCodes.OK).json({ msg: "Success! User Deleted.",user });
+      return
+    }
+    res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Not Authorized!" });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: error.message });
+  }
+};
 module.exports = {
   register,
   login,
   logout,
   getAllUsers,
-  getSingleUser
+  getSingleUser,
+  deleteCurrentUser,
+  updateStatus,
+  updateUser,
 };

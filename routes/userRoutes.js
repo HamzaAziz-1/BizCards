@@ -6,12 +6,21 @@ const {
   authorizePermissions,
 } = require("../middlewares/authentication");
 
-const { register, login, logout } = require("../controllers/userController");
+const {
+  register,
+  login,
+  logout,
+  getAllUsers,
+  getSingleUser,
+  deleteCurrentUser,
+  updateStatus,
+  updateUser,
+} = require("../controllers/userController");
 
 router
   .route("/")
   .get(authenticateUser, authorizePermissions("admin"), getAllUsers)
-  .post("/", register);
+  .post(register);
 router
   .route("/:id")
   .get(authenticateUser, getSingleUser)
