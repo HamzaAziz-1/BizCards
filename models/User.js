@@ -1,86 +1,81 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const Joi = require("joi");
-const bcrypt = require("bcryptjs");
 
-const UserSchema = new Schema({
-  name: {
-    first: {
+const UserSchema = new Schema(
+  {
+    name: {
+      first: {
+        type: String,
+        required: true,
+      },
+      middle: {
+        type: String,
+      },
+      last: {
+        type: String,
+        required: true,
+      },
+    },
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    password: {
       type: String,
       required: true,
     },
-    middle: {
+    role: {
       type: String,
+      enum: ["admin", "user"],
+      default: "user",
     },
-    last: {
-      type: String,
-      required: true,
-    },
-  },
-  email: {
-    type: String,
-    unique: true,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    enum: ["admin", "user"],
-    default: "user",
-  },
-  phone: {
-    type: String,
-    required: true,
-  },
-  address: {
-    state: {
-      type: String,
-    },
-    country: {
+    phone: {
       type: String,
       required: true,
     },
-    city: {
-      type: String,
-      required: true,
+    address: {
+      state: {
+        type: String,
+      },
+      country: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      street: {
+        type: String,
+        required: true,
+      },
+      houseNumber: {
+        type: String,
+        required: true,
+      },
     },
-    street: {
-      type: String,
-      required: true,
+    isBusiness: {
+      type: Boolean,
+      default: false,
     },
-    houseNumber: {
-      type: String,
-      required: true,
+    image: {
+      url: {
+        type: String,
+        default:
+          "https://res.cloudinary.com/dlpjcvsii/image/upload/v1688459756/file-upload/tmp-1-1688459755587_hvt1fy.png",
+      },
+      alt: {
+        type: String,
+      },
     },
   },
-  isBusiness: {
-    type: Boolean,
-    default: false,
-  },
-  image: {
-    url: {
-      type: String,
-      default:
-        "https://res.cloudinary.com/dlpjcvsii/image/upload/v1688459756/file-upload/tmp-1-1688459755587_hvt1fy.png",
-    },
-    alt: {
-      type: String,
-    },
-  },
-},{timestamps:true});
-
-UserSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
+  { timestamps: true }
+);
 
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  const isMatch = await bcrypt.compare(candidatePassword, this.password);
-  return isMatch;
+  return this.password == candidatePassword;
 };
 
 const userValidationSchema = Joi.object({
@@ -101,8 +96,9 @@ const userValidationSchema = Joi.object({
     "any.required": "Please provide password",
   }),
   role: Joi.string().valid("admin", "user").default("user"),
-  phone: Joi.string().required().messages({
+  phone: Joi.string().required().min(11).messages({
     "any.required": "Please provide phone number",
+    "any.min": "Phone must have at least 11 characters",
   }),
   address: Joi.object({
     state: Joi.string().allow(null, ""),

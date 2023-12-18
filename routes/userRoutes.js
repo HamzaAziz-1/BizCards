@@ -17,6 +17,9 @@ const {
   updateUser,
 } = require("../controllers/userController");
 
+router.post("/login", login);
+router.delete("/logout", logout);
+
 router
   .route("/")
   .get(authenticateUser, authorizePermissions("admin"), getAllUsers)
@@ -27,7 +30,6 @@ router
   .put(authenticateUser, updateUser)
   .patch(authenticateUser, updateStatus)
   .delete(authenticateUser, deleteCurrentUser);
-router.post("/login", login);
-router.delete("/logout", authenticateUser, logout);
+
 
 module.exports = router;

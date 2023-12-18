@@ -187,8 +187,8 @@ const deleteCurrentUser = async (req, res) => {
     }
     if (req.user.role == "admin" || req.user.userId == id) {
       await user.deleteOne();
-      res.status(StatusCodes.OK).json({ msg: "Success! User Deleted.",user });
-      return
+      res.status(StatusCodes.OK).json({ msg: "Success! User Deleted.", user });
+      return;
     }
     res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Not Authorized!" });
   } catch (error) {
